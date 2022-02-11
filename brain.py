@@ -5,9 +5,13 @@ from typing import List
 class Brain:
     def __init__(self, inputs_len: int, hidden_layer_len: int, outputs_len: int):
         #Creates a list of lists, that containst output_len og hidden_layer_len number of lists with each list containing inputs_len items.
+        self.inputs_len = inputs_len
+        self.hidden_len = hidden_layer_len
+        self.outputs_len = outputs_len
+        
+
         self.weights_hidden = np.random.uniform(-1, 1, (hidden_layer_len, inputs_len)) 
         self.weights_output = np.random.uniform(-1, 1, (outputs_len, hidden_layer_len))
-
     def input_processing(self, inputs:List[float], velocity):
         """
         Inputs are the sensor values / pixel values

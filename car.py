@@ -5,8 +5,9 @@ from sensor import Sensor
 from math import pi
 from brain import Brain
 
+SENSOR_LENGTH = 0
+
 class Car:
-    
     def __init__(self, screen, size: int, startx: int, starty: int, heading:int = 0, track_img = None):
         self.track_img = track_img
         self.BLACK = (0, 0, 0, 0)
@@ -21,6 +22,7 @@ class Car:
         self.sensors = [
             Sensor(PVector(*sensor_len).rotate(heading), self.pos, self.screen),
             Sensor(PVector(0, -100).rotate(heading), self.pos, self.screen),
+            Sensor(PVector(0, -200).rotate(heading), self.pos, self.screen),
             Sensor(PVector(*sensor_len).rotate(heading), self.pos, self.screen),
             Sensor(PVector(*sensor_len).rotate(heading+1/3*pi), self.pos, self.screen),
             Sensor(PVector(*sensor_len).rotate(heading+2/3*pi), self.pos, self.screen),
@@ -28,6 +30,9 @@ class Car:
             Sensor(PVector(*sensor_len).rotate(heading+4/3*pi), self.pos, self.screen),
             Sensor(PVector(*sensor_len).rotate(heading+5/3*pi), self.pos, self.screen)
         ]
+        global SENSOR_LENGTH
+        SENSOR_LENGTH = len(self.sensors) + 1
+
         #random.shuffle(self.color)
         self.color = tuple(self.color)
 
@@ -39,10 +44,18 @@ class Car:
         self.has_passed_green = False
         
         # Init brain
-        self.brain = Brain(len(self.sensors) + 1, 8, 4)
-    
+        self.brain = Brain(SENSOR_LENGTH, 16, 4) #HVIS DETTE ÆNDRES ÆNDR SÅ OGSÅ GENETISK ALGORITME!!!!!
+
+        #Variables to calculate fitness_score
+        self.time_alive = 0
+        self.num_passed_checkpoints = 0
+
     def drive(self):
-        "Adds the velocity to the cars position and updates the position of its sensors"
+        """
+        Adds the velocity to the cars position and updates the position of its sensors
+        Gets the inputs from the 
+        """
+        self.time_alive += 1
         self.pos = self.pos.add(self.velocity)
         
         # Update sensors position and get new pixel val
@@ -59,12 +72,13 @@ class Car:
             self.accelarate()
         if outputs[1]: # Meaning brake
             self.brake()
-        if outputs[2]: # Meaning accelerate
+        if outputs[2]:
             self.turn(-.1) # TUrn left
-        if outputs[3]: # Meaning brake
+        if outputs[3]: 
             self.turn(.1) # TUrn right
         
-        self.has_passed_checkpoint()
+        if self.has_passed_checkpoint():
+            self.num_passed_checkpoints += 1
         
     def accelarate(self):
         "Adds the accelaration to the velocity"
@@ -73,7 +87,7 @@ class Car:
     def brake(self):
         "Subtracts the accelaration from the velocity"
         if self.velocity.length() > self.accelaration.length():
-            self.velocity = self.velocity.sub(self.accelaration)
+            self.velocity = self.velocity.sub(self.accelaration.mul(0.8))
         else:
             self.velocity.x = 0
             self.velocity.y = 0
@@ -88,7 +102,6 @@ class Car:
             self.velocity.rotate(angle)
             for i in self.sensors:
                 i.sens.rotate(angle)
-
             
     def draw(self):
         "Draws the car and its sensors in Pygame"
@@ -109,7 +122,7 @@ class Car:
             #Count number of times the velocity is equal to zero
             self.num_of_zero_vel += 1
 
-        if self.num_of_zero_vel > 60: return True #The car is dead, if the velocity has been 0 for 1 second
+        if self.num_of_zero_vel >= 60: return True #The car is dead, if the velocity has been 0 for 1 second
 
         if self.is_green(color[:3]) and not self.has_passed_red: #Has the car passed the green checkpoint without passing the red? (Drive the wrong way)
             return True
@@ -119,7 +132,13 @@ class Car:
         except:
             return False
 
-        
+    def calc_fitness(self) -> int:
+        checkpoints = self.num_passed_checkpoints
+        if checkpoints >= 3:
+            score = checkpoints**checkpoints
+        else: 
+            score = checkpoints
+        return score/self.time_alive*0.5
         
 
     def has_passed_checkpoint(self):

@@ -33,4 +33,4 @@ class Sensor(PVector):
 
     def is_black(self, color):
         r,g,b = color[:3]
-        return r < 100 and g < 100 and b < 100
+        return r < 50 and g < 50 and b < 50
